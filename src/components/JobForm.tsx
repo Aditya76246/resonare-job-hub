@@ -104,7 +104,7 @@ const JobForm = ({ userType }: JobFormProps) => {
 
     try {
       // The API endpoint on your server
-      const API_URL = 'http://localhost:5000/api/submit-form';
+      const API_URL = 'https://resonare-job-hub.onrender.com/api/submit-form';
 
       const response = await fetch(API_URL, {
         method: 'POST',
