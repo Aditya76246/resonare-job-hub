@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Moon, Sun, Home } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
+import {Link} from "react-router-dom"
 
 interface HeaderProps {
   onBackToHome?: () => void;
@@ -45,6 +46,9 @@ const Header = ({ onBackToHome }: HeaderProps) => {
           <a href="#contact" className="text-sm font-medium hover:text-primary transition-colors">
             Contact
           </a>
+          <Link to="/userData">
+            Office Use Only
+          </Link>
         </nav>
 
         <div className="flex items-center space-x-2">
