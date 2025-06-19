@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, ServerCrash, User, Building, FileText } from "lucide-react";
+import {Link} from "react-router-dom"
 
 // 1. Define a TypeScript interface for the data from your MongoDB
 // This MUST match your Mongoose Schema in `Submission.js`
@@ -108,9 +109,14 @@ export default function UserData() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-center mb-2">Form Submissions</h1>
+        <div className="relative flex items-center justify-center mb-4">
+        <h1 className="text-3xl font-bold text-center">Form Submissions</h1>
+        <Link to="/" className="absolute right-4 text-blue-600 hover:underline">
+            Go Home
+        </Link>
+        </div>
       <p className="text-center text-muted-foreground mb-8">Found {submissions.length} total entries.</p>
-      
+
       {/* 3. Display each submission as a clickable card in a grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {submissions.map((sub) => (
