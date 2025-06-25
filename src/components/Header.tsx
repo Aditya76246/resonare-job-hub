@@ -18,33 +18,40 @@ const Header = ({ onBackToHome }: HeaderProps) => {
   const navLinks = (
     <>
       <a
-        href="#about"
+        href="/about"
         onClick={() => setIsMobileMenuOpen(false)} // Close menu on click
         className="text-sm font-medium hover:text-primary transition-colors"
       >
         About
       </a>
       <a
-        href="#services"
+        href="/services"
         onClick={() => setIsMobileMenuOpen(false)} // Close menu on click
         className="text-sm font-medium hover:text-primary transition-colors"
       >
         Services
       </a>
       <a
-        href="#contact"
+        href="/contact"
         onClick={() => setIsMobileMenuOpen(false)} // Close menu on click
         className="text-sm font-medium hover:text-primary transition-colors"
       >
         Contact
       </a>
-      <Link
-        to="/userData"
+      <a
+        href="/career"
         onClick={() => setIsMobileMenuOpen(false)} // Close menu on click
         className="text-sm font-medium hover:text-primary transition-colors"
       >
-        Office Use Only
-      </Link>
+        Career
+      </a>
+      <a
+        href="/userData"
+        onClick={() => setIsMobileMenuOpen(false)} // Close menu on click
+        className="text-sm font-medium hover:text-primary transition-colors"
+      >
+        Admin Only
+      </a>
     </>
   );
 
