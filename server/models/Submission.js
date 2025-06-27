@@ -90,7 +90,7 @@ const submissionSchema = new mongoose.Schema({
   // --- Employer Fields ---
   emCompanyName: String,
   emContactPerson: String,
-emMobile: String,
+  emMobile: String,
   emEmail: String,
   emServices: [String], // Array of strings for the checkboxes
   emStaffRequired: String,
