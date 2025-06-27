@@ -4,6 +4,7 @@ const submissionSchema = new mongoose.Schema({
   // Common fields for both user types
   userType: { type: String, required: true, enum: ['jobSeeker', 'employer'] },
   heardFrom: String,
+      heardFromDetail: String,
   agreeTerms: { type: Boolean, required: true },
   
   // --- Job Seeker Fields ---
