@@ -1,7 +1,7 @@
 import { useState, useEffect, FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { motion, Variants } from "framer-motion";
-import * as XLSX from 'xlsx'; // --- NEW: Import the xlsx library ---
+import * as XLSX from 'xlsx';
 
 // Import your shared components
 import Header from "@/components/Header";
@@ -18,8 +18,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 
 // Import icons from lucide-react
-// --- NEW: Import Download icon ---
-import { Loader2, ServerCrash, User, Building, FileText, LogIn, ShieldAlert, Trash2, Search, ListFilter, Download } from "lucide-react";
+// --- NEW: Import Calendar and X icons for the date filter ---
+import { Loader2, ServerCrash, User, Building, FileText, LogIn, ShieldAlert, Trash2, Search, ListFilter, Download, Calendar, X } from "lucide-react";
 
 // --- INTERFACES & ANIMATION VARIANTS (Unchanged) ---
 interface Submission {
@@ -36,14 +36,8 @@ const DetailItem = ({ label, value }: { label: string; value?: string | number |
   );
 };
 
-const fadeInUp: Variants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } },
-};
-const staggerContainer: Variants = {
-  hidden: {},
-  visible: { transition: { staggerChildren: 0.1 } },
-};
+const fadeInUp: Variants = { hidden: { opacity: 0, y: 30 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }, };
+const staggerContainer: Variants = { hidden: {}, visible: { transition: { staggerChildren: 0.1 } }, };
 
 
 // --- LOGIN SCREEN COMPONENT (Unchanged) ---
@@ -89,18 +83,23 @@ const LoginScreen = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
 };
 
 
-// --- SUBMISSIONS DISPLAY COMPONENT (UPDATED WITH DOWNLOAD LOGIC) ---
+// --- SUBMISSIONS DISPLAY COMPONENT (UPDATED WITH DATE FILTERING) ---
 const SubmissionsDisplay = () => {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
+  
+  // Existing filter states
   const [filterUserType, setFilterUserType] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  // --- NEW: State for download button loading status ---
-  const [isDownloading, setIsDownloading] = useState(false);
 
-  // Data fetching and delete logic are unchanged
+  // --- NEW: State for date range filtering ---
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [endDate, setEndDate] = useState<string | null>(null);
+
+  // All existing functions are unchanged
   useEffect(() => {
     const fetchSubmissions = async () => {
       try {
@@ -138,7 +137,34 @@ const SubmissionsDisplay = () => {
     }
   };
   
-  // Filtering logic is unchanged
+  const handleDownload = () => {
+    if (filteredSubmissions.length === 0) {
+      alert("No data to download.");
+      return;
+    }
+    setIsDownloading(true);
+    try {
+      const dataToExport = filteredSubmissions.map(sub => {
+        if (sub.userType === 'jobSeeker') {
+          return { 'User Type': 'Job Seeker', 'Name': sub.jsFullName || '', 'Email': sub.jsEmail || '', 'Mobile': sub.jsMobile || '', 'City': sub.jsCity || '', 'DOB': sub.jsDOB || '', 'Qualification': sub.jsQualification || '', 'Specialization': sub.jsSpecialization || '', 'Skills': sub.jsSkills || '', 'Experience': sub.jsWorkExp === 'yes' ? `${sub.jsYearsExp || 0}y ${sub.jsMonthsExp || 0}m` : 'No', 'Expected Salary': sub.jsExpectedSalary || '', 'Submitted On': new Date(sub.createdAt).toLocaleString() };
+        } else {
+          return { 'User Type': 'Employer', 'Company Name': sub.emCompanyName || '', 'Contact Person': sub.emContactPerson || '', 'Email': sub.emEmail || '', 'Mobile': sub.emMobile || '', 'Staff Required': sub.emStaffRequired || '', 'Services Needed': (sub.emServices || []).join(', '), 'Job Description': sub.emJobRoleDesc || '', 'Budget': sub.emBudget || '', 'Submitted On': new Date(sub.createdAt).toLocaleString() };
+        }
+      });
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Submissions");
+      const date = new Date().toISOString().split('T')[0];
+      XLSX.writeFile(workbook, `Submissions_Data_${date}.xlsx`);
+    } catch (e) {
+      console.error("Error creating Excel file:", e);
+      alert("Failed to create Excel file.");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+  
+  // --- UPDATED: Filtering logic now includes a date range filter step ---
   const filteredSubmissions = submissions
     .filter(sub => {
       if (filterUserType === 'all') return true;
@@ -155,76 +181,28 @@ const SubmissionsDisplay = () => {
         searchableContent = [ sub.emCompanyName, sub.emContactPerson, sub.emEmail, sub.emStaffRequired, sub.emJobRoleDesc, ...(sub.emServices || []) ].join(' ').toLowerCase();
       }
       return keywords.every(keyword => searchableContent.includes(keyword));
+    })
+    .filter(sub => { // --- NEW: Date range filtering logic ---
+      if (!startDate && !endDate) return true; // Pass if no dates are set
+
+      const submissionDate = new Date(sub.createdAt);
+      
+      const start = startDate ? new Date(startDate) : null;
+      if (start) start.setUTCHours(0, 0, 0, 0);
+      
+      const end = endDate ? new Date(endDate) : null;
+      if (end) end.setUTCHours(23, 59, 59, 999);
+
+      if (start && end) return submissionDate >= start && submissionDate <= end;
+      if (start) return submissionDate >= start;
+      if (end) return submissionDate <= end;
+      
+      return true;
     });
 
-  // --- NEW: Function to handle the download ---
-  const handleDownload = () => {
-    if (filteredSubmissions.length === 0) {
-      alert("No data to download.");
-      return;
-    }
-    
-    setIsDownloading(true);
-
-    try {
-      // 1. Format the data for the Excel sheet
-      const dataToExport = filteredSubmissions.map(sub => {
-        if (sub.userType === 'jobSeeker') {
-          return {
-            'User Type': 'Job Seeker',
-            'Name': sub.jsFullName || '',
-            'Email': sub.jsEmail || '',
-            'Mobile': sub.jsMobile || '',
-            'City': sub.jsCity || '',
-            'DOB': sub.jsDOB || '',
-            'Qualification': sub.jsQualification || '',
-            'Specialization': sub.jsSpecialization || '',
-            'Skills': sub.jsSkills || '',
-            'Experience': sub.jsWorkExp === 'yes' ? `${sub.jsYearsExp || 0}y ${sub.jsMonthsExp || 0}m` : 'No',
-            'Expected Salary': sub.jsExpectedSalary || '',
-            'Submitted On': new Date(sub.createdAt).toLocaleString()
-          };
-        } else { // Employer
-          return {
-            'User Type': 'Employer',
-            'Company Name': sub.emCompanyName || '',
-            'Contact Person': sub.emContactPerson || '',
-            'Email': sub.emEmail || '',
-            'Mobile': sub.emMobile || '',
-            'Staff Required': sub.emStaffRequired || '',
-            'Services Needed': (sub.emServices || []).join(', '),
-            'Job Description': sub.emJobRoleDesc || '',
-            'Budget': sub.emBudget || '',
-            'Submitted On': new Date(sub.createdAt).toLocaleString()
-          };
-        }
-      });
-
-      // 2. Create a worksheet from the formatted data
-      const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-      
-      // 3. Create a new workbook
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Submissions");
-
-      // 4. Trigger the file download
-      const date = new Date().toISOString().split('T')[0];
-      XLSX.writeFile(workbook, `Submissions_Data_${date}.xlsx`);
-
-    } catch (e) {
-      console.error("Error creating Excel file:", e);
-      alert("Failed to create Excel file.");
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  // Loading/error/empty states are unchanged
   if (loading) { return <div className="flex justify-center items-center flex-1 flex-col gap-4"><Loader2 className="w-12 h-12 animate-spin text-primary" /><p className="text-lg text-muted-foreground">Loading Submissions...</p></div>; }
   if (error) { return <div className="flex-1 flex items-center justify-center p-4"><div className="container mx-auto px-4 py-8 text-center text-destructive-foreground bg-destructive rounded-lg"><ServerCrash className="w-12 h-12 mx-auto" /><h2 className="text-2xl font-bold mt-4">Error Fetching Data</h2><p>{error}</p></div></div>; }
-  if (submissions.length === 0) {
-    return <div className="flex-1 flex flex-col justify-center items-center gap-4 text-center"><FileText className="w-16 h-16 text-muted-foreground" /><h2 className="text-2xl font-semibold">No Submissions Yet</h2><p className="text-muted-foreground">Once the form is submitted, the data will appear here.</p></div>;
-  }
+  if (submissions.length === 0) { return <div className="flex-1 flex flex-col justify-center items-center gap-4 text-center"><FileText className="w-16 h-16 text-muted-foreground" /><h2 className="text-2xl font-semibold">No Submissions Yet</h2><p className="text-muted-foreground">Once the form is submitted, the data will appear here.</p></div>; }
   
   return (
     <>
@@ -237,10 +215,10 @@ const SubmissionsDisplay = () => {
         </motion.p>
       </motion.div>
 
-      {/* --- UPDATED: FILTERING AND SEARCHING CONTROLS WITH DOWNLOAD BUTTON --- */}
+      {/* --- UPDATED: Main filter bar layout to accommodate date pickers --- */}
       <motion.div 
         variants={fadeInUp}
-        className="flex flex-col sm:flex-row gap-4 mb-8 p-4 bg-card/30 backdrop-blur-sm rounded-lg border sticky top-4 z-20 items-center"
+        className="flex flex-col lg:flex-row gap-4 mb-8 p-4 bg-card/30 backdrop-blur-sm rounded-lg border sticky top-4 z-20 items-center"
       >
         <div className="relative flex-grow w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -251,31 +229,35 @@ const SubmissionsDisplay = () => {
             className="pl-10 h-11 text-base"
           />
         </div>
-        <div className="flex gap-4 w-full sm:w-auto">
-          <Select value={filterUserType} onValueChange={setFilterUserType}>
-            <SelectTrigger className="w-full sm:w-[180px] h-11 text-base">
-              <ListFilter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Filter by type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="jobSeeker">Job Seekers</SelectItem>
-              <SelectItem value="employer">Employers</SelectItem>
-            </SelectContent>
-          </Select>
-          {/* --- NEW: DOWNLOAD BUTTON --- */}
-          <Button 
-            className="h-11 w-full sm:w-auto"
-            onClick={handleDownload} 
-            disabled={isDownloading || filteredSubmissions.length === 0}
-          >
-            {isDownloading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="mr-2 h-4 w-4" />
-            )}
-            Export
-          </Button>
+        <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+          {/* --- NEW: Date Range Filter Inputs --- */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Label htmlFor="startDate" className="sr-only">Start Date</Label>
+            <Input id="startDate" type="date" value={startDate || ''} onChange={(e) => setStartDate(e.target.value)} className="h-11" />
+            <span className="text-muted-foreground">-</span>
+            <Label htmlFor="endDate" className="sr-only">End Date</Label>
+            <Input id="endDate" type="date" value={endDate || ''} onChange={(e) => setEndDate(e.target.value)} min={startDate || ''} className="h-11" />
+            <Button variant="ghost" size="icon" onClick={() => { setStartDate(null); setEndDate(null); }} className="h-11 w-11 shrink-0">
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+          <div className="flex gap-4 w-full">
+            <Select value={filterUserType} onValueChange={setFilterUserType}>
+              <SelectTrigger className="w-full sm:w-[180px] h-11 text-base">
+                <ListFilter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Filter by type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="jobSeeker">Job Seekers</SelectItem>
+                <SelectItem value="employer">Employers</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button className="h-11 w-full sm:w-auto" onClick={handleDownload} disabled={isDownloading || filteredSubmissions.length === 0}>
+              {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+              Export
+            </Button>
+          </div>
         </div>
       </motion.div>
 
@@ -304,7 +286,7 @@ const SubmissionsDisplay = () => {
                 </motion.div>
               </DialogTrigger>
               <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                {/* Dialog content is unchanged */}
+                {/* All Dialog content is unchanged and will display as before */}
                 <DialogHeader>
                   <DialogTitle className="text-2xl">{sub.userType === 'jobSeeker' ? sub.jsFullName : sub.emCompanyName}</DialogTitle>
                   <Badge variant={sub.userType === 'jobSeeker' ? 'default' : 'secondary'} className="w-fit">{sub.userType === 'jobSeeker' ? 'Job Seeker Submission' : 'Employer Submission'}</Badge>
