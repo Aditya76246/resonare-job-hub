@@ -51,7 +51,7 @@ const Header = ({ onBackToHome, onBackToSelection }: HeaderProps) => {
             // Otherwise, show the default Logo and Brand Name
             <Link to="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm"><img src="../../public/Favicon-background.png" alt="Company Logo"/></span>
+                <span className="text-white font-bold text-sm"><img src="../../public/FaviconBackground.png" alt="Company Logo"/></span>
               </div>
               <span className="font-bold text-lg bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 Maven Brisk
