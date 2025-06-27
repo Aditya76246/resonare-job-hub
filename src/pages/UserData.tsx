@@ -18,21 +18,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 
 // Import icons from lucide-react
-// --- NEW: Import Calendar and X icons for the date filter ---
 import { Loader2, ServerCrash, User, Building, FileText, LogIn, ShieldAlert, Trash2, Search, ListFilter, Download, Calendar, X } from "lucide-react";
 
-// --- INTERFACES & ANIMATION VARIANTS (Unchanged) ---
+// --- INTERFACES & ANIMATION VARIANTS ---
 interface Submission {
   _id: string; createdAt: string; userType: 'jobSeeker' | 'employer';
   jsFullName?: string; jsMobile?: string; jsEmail?: string; jsDOB?: string; jsCity?: string; jsGender?: string; jsQualification?: string; jsSpecialization?: string; jsUniversity?: string; jsYearCompletion?: string; jsMarks?: string; jsSkills?: string; jsWorkExp?: string; jsFieldExp?: string; jsYearsExp?: string; jsMonthsExp?: string; jsDaysExp?: string; jsLastSalary?: string; jsExpectedSalary?: string; jsJoinType?: string; jsWorkArrangement?:string; jsWhyWork?: string;
   emCompanyName?: string; emContactPerson?: string; emMobile?: string; emEmail?: string; emServices?: string[]; emStaffRequired?: string; emJobRoleDesc?: string; emBudget?: string; emStartDate?: string; emComments?: string;
   heardFrom?: string;
+  // --- NEW: Add the new field to the interface ---
+  heardFromDetail?: string;
 }
 
 const DetailItem = ({ label, value }: { label: string; value?: string | number | null }) => {
+  // --- UPDATED: Conditionally render the item only if value exists ---
   if (!value) return null;
   return (
-    <div><p className="text-sm font-semibold text-muted-foreground">{label}</p><p className="text-md">{value}</p></div>
+    <div>
+        <p className="text-sm font-semibold text-muted-foreground">{label}</p>
+        <p className="text-md break-words">{value}</p>
+    </div>
   );
 };
 
@@ -83,23 +88,18 @@ const LoginScreen = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
 };
 
 
-// --- SUBMISSIONS DISPLAY COMPONENT (UPDATED WITH DATE FILTERING) ---
+// --- SUBMISSIONS DISPLAY COMPONENT (UPDATED WITH FIXES) ---
 const SubmissionsDisplay = () => {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
-  
-  // Existing filter states
   const [filterUserType, setFilterUserType] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-
-  // --- NEW: State for date range filtering ---
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
 
-  // All existing functions are unchanged
   useEffect(() => {
     const fetchSubmissions = async () => {
       try {
@@ -144,11 +144,42 @@ const SubmissionsDisplay = () => {
     }
     setIsDownloading(true);
     try {
+      // --- UPDATED: Excel export logic to include the new fields ---
       const dataToExport = filteredSubmissions.map(sub => {
+        const commonData = {
+            'Heard From': sub.heardFrom || '',
+            'Reference/Source': sub.heardFromDetail || '',
+            'Submitted On': new Date(sub.createdAt).toLocaleString(),
+        };
+
         if (sub.userType === 'jobSeeker') {
-          return { 'User Type': 'Job Seeker', 'Name': sub.jsFullName || '', 'Email': sub.jsEmail || '', 'Mobile': sub.jsMobile || '', 'City': sub.jsCity || '', 'DOB': sub.jsDOB || '', 'Qualification': sub.jsQualification || '', 'Specialization': sub.jsSpecialization || '', 'Skills': sub.jsSkills || '', 'Experience': sub.jsWorkExp === 'yes' ? `${sub.jsYearsExp || 0}y ${sub.jsMonthsExp || 0}m` : 'No', 'Expected Salary': sub.jsExpectedSalary || '', 'Submitted On': new Date(sub.createdAt).toLocaleString() };
+          return {
+            'User Type': 'Job Seeker',
+            'Name': sub.jsFullName || '',
+            'Email': sub.jsEmail || '',
+            'Mobile': sub.jsMobile || '',
+            'City': sub.jsCity || '',
+            'DOB': sub.jsDOB || '',
+            'Qualification': sub.jsQualification || '',
+            'Specialization': sub.jsSpecialization || '',
+            'Skills': sub.jsSkills || '',
+            'Experience': sub.jsWorkExp === 'yes' ? `${sub.jsYearsExp || 0}y ${sub.jsMonthsExp || 0}m` : 'No',
+            'Expected Salary': sub.jsExpectedSalary || '',
+            ...commonData
+          };
         } else {
-          return { 'User Type': 'Employer', 'Company Name': sub.emCompanyName || '', 'Contact Person': sub.emContactPerson || '', 'Email': sub.emEmail || '', 'Mobile': sub.emMobile || '', 'Staff Required': sub.emStaffRequired || '', 'Services Needed': (sub.emServices || []).join(', '), 'Job Description': sub.emJobRoleDesc || '', 'Budget': sub.emBudget || '', 'Submitted On': new Date(sub.createdAt).toLocaleString() };
+          return {
+            'User Type': 'Employer',
+            'Company Name': sub.emCompanyName || '',
+            'Contact Person': sub.emContactPerson || '',
+            'Email': sub.emEmail || '',
+            'Mobile': sub.emMobile || '',
+            'Staff Required': sub.emStaffRequired || '',
+            'Services Needed': (sub.emServices || []).join(', '),
+            'Job Description': sub.emJobRoleDesc || '',
+            'Budget': sub.emBudget || '',
+            ...commonData
+          };
         }
       });
       const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -164,7 +195,6 @@ const SubmissionsDisplay = () => {
     }
   };
   
-  // --- UPDATED: Filtering logic now includes a date range filter step ---
   const filteredSubmissions = submissions
     .filter(sub => {
       if (filterUserType === 'all') return true;
@@ -175,31 +205,30 @@ const SubmissionsDisplay = () => {
       if (!term) return true;
       const keywords = term.split(' ').filter(k => k);
       let searchableContent = '';
+      // --- UPDATED: Add new fields to the searchable content ---
+      const commonSearchable = [sub.heardFrom, sub.heardFromDetail].join(' ').toLowerCase();
+
       if (sub.userType === 'jobSeeker') {
-        searchableContent = [ sub.jsFullName, sub.jsEmail, sub.jsCity, sub.jsSkills, sub.jsQualification, sub.jsSpecialization, sub.jsUniversity ].join(' ').toLowerCase();
+        searchableContent = [ sub.jsFullName, sub.jsEmail, sub.jsCity, sub.jsSkills, sub.jsQualification, sub.jsSpecialization, sub.jsUniversity, commonSearchable ].join(' ').toLowerCase();
       } else if (sub.userType === 'employer') {
-        searchableContent = [ sub.emCompanyName, sub.emContactPerson, sub.emEmail, sub.emStaffRequired, sub.emJobRoleDesc, ...(sub.emServices || []) ].join(' ').toLowerCase();
+        searchableContent = [ sub.emCompanyName, sub.emContactPerson, sub.emEmail, sub.emStaffRequired, sub.emJobRoleDesc, ...(sub.emServices || []), commonSearchable ].join(' ').toLowerCase();
       }
       return keywords.every(keyword => searchableContent.includes(keyword));
     })
-    .filter(sub => { // --- NEW: Date range filtering logic ---
-      if (!startDate && !endDate) return true; // Pass if no dates are set
-
+    .filter(sub => {
+      if (!startDate && !endDate) return true;
       const submissionDate = new Date(sub.createdAt);
-      
       const start = startDate ? new Date(startDate) : null;
       if (start) start.setUTCHours(0, 0, 0, 0);
-      
       const end = endDate ? new Date(endDate) : null;
       if (end) end.setUTCHours(23, 59, 59, 999);
-
       if (start && end) return submissionDate >= start && submissionDate <= end;
       if (start) return submissionDate >= start;
       if (end) return submissionDate <= end;
-      
       return true;
     });
 
+  // The rest of the component layout is unchanged...
   if (loading) { return <div className="flex justify-center items-center flex-1 flex-col gap-4"><Loader2 className="w-12 h-12 animate-spin text-primary" /><p className="text-lg text-muted-foreground">Loading Submissions...</p></div>; }
   if (error) { return <div className="flex-1 flex items-center justify-center p-4"><div className="container mx-auto px-4 py-8 text-center text-destructive-foreground bg-destructive rounded-lg"><ServerCrash className="w-12 h-12 mx-auto" /><h2 className="text-2xl font-bold mt-4">Error Fetching Data</h2><p>{error}</p></div></div>; }
   if (submissions.length === 0) { return <div className="flex-1 flex flex-col justify-center items-center gap-4 text-center"><FileText className="w-16 h-16 text-muted-foreground" /><h2 className="text-2xl font-semibold">No Submissions Yet</h2><p className="text-muted-foreground">Once the form is submitted, the data will appear here.</p></div>; }
@@ -215,7 +244,6 @@ const SubmissionsDisplay = () => {
         </motion.p>
       </motion.div>
 
-      {/* --- UPDATED: Main filter bar layout to accommodate date pickers --- */}
       <motion.div 
         variants={fadeInUp}
         className="flex flex-col lg:flex-row gap-4 mb-8 p-4 bg-card/30 backdrop-blur-sm rounded-lg border sticky top-4 z-20 items-center"
@@ -223,14 +251,13 @@ const SubmissionsDisplay = () => {
         <div className="relative flex-grow w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input 
-            placeholder="Search by name, skill... (e.g., 'react node')"
+            placeholder="Search by name, skill, reference..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 h-11 text-base"
           />
         </div>
         <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-          {/* --- NEW: Date Range Filter Inputs --- */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <Label htmlFor="startDate" className="sr-only">Start Date</Label>
             <Input id="startDate" type="date" value={startDate || ''} onChange={(e) => setStartDate(e.target.value)} className="h-11" />
@@ -261,7 +288,6 @@ const SubmissionsDisplay = () => {
         </div>
       </motion.div>
 
-      {/* Grid rendering logic is unchanged */}
       <motion.div 
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         variants={staggerContainer} initial="hidden" animate="visible"
@@ -286,14 +312,44 @@ const SubmissionsDisplay = () => {
                 </motion.div>
               </DialogTrigger>
               <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                {/* All Dialog content is unchanged and will display as before */}
                 <DialogHeader>
                   <DialogTitle className="text-2xl">{sub.userType === 'jobSeeker' ? sub.jsFullName : sub.emCompanyName}</DialogTitle>
                   <Badge variant={sub.userType === 'jobSeeker' ? 'default' : 'secondary'} className="w-fit">{sub.userType === 'jobSeeker' ? 'Job Seeker Submission' : 'Employer Submission'}</Badge>
                 </DialogHeader>
                 <div className="grid gap-6 py-4">
-                  {sub.userType === 'jobSeeker' ? ( <> <section><h3 className="font-bold text-lg border-b pb-2 mb-3">Personal Information</h3><div className="grid grid-cols-2 md:grid-cols-3 gap-4"><DetailItem label="Full Name" value={sub.jsFullName} /> <DetailItem label="Mobile" value={sub.jsMobile} /> <DetailItem label="Email" value={sub.jsEmail} /> <DetailItem label="City" value={sub.jsCity} /> <DetailItem label="Date of Birth" value={sub.jsDOB} /> <DetailItem label="Gender" value={sub.jsGender} /></div></section> <section><h3 className="font-bold text-lg border-b pb-2 mb-3">Education & Skills</h3><div className="grid grid-cols-2 md:grid-cols-3 gap-4"><DetailItem label="Highest Qualification" value={sub.jsQualification} /> <DetailItem label="Specialization" value={sub.jsSpecialization} /> <DetailItem label="University" value={sub.jsUniversity} /> <DetailItem label="Year of Completion" value={sub.jsYearCompletion} /> <DetailItem label="Marks/CGPA" value={sub.jsMarks} /></div><div className="mt-4"><DetailItem label="Skills" value={sub.jsSkills} /></div></section> <section><h3 className="font-bold text-lg border-b pb-2 mb-3">Work Experience</h3><div className="grid grid-cols-2 md:grid-cols-3 gap-4"><DetailItem label="Has Experience?" value={sub.jsWorkExp} /> <DetailItem label="Experience Field" value={sub.jsFieldExp} />{sub.jsWorkExp === 'yes' && <DetailItem label="Duration" value={`${sub.jsYearsExp || 0}y ${sub.jsMonthsExp || 0}m ${sub.jsDaysExp || 0}d`} />}<DetailItem label="Last Salary" value={sub.jsLastSalary} /> <DetailItem label="Expected Salary" value={sub.jsExpectedSalary} /></div></section> <section><h3 className="font-bold text-lg border-b pb-2 mb-3">Preferences & Other</h3><div className="grid grid-cols-2 gap-4"><DetailItem label="Joining As" value={sub.jsJoinType} /> <DetailItem label="Heard From" value={sub.heardFrom} /></div><div className="mt-4"><DetailItem label="Work Arrangement" value={sub.jsWorkArrangement} /></div><div className="mt-4"><DetailItem label="Why work with us?" value={sub.jsWhyWork} /></div></section> </>
-                  ) : ( <> <section><h3 className="font-bold text-lg border-b pb-2 mb-3">Company Information</h3><div className="grid grid-cols-2 md:grid-cols-3 gap-4"><DetailItem label="Company Name" value={sub.emCompanyName} /> <DetailItem label="Contact Person" value={sub.emContactPerson} /> <DetailItem label="Mobile" value={sub.emMobile} /> <DetailItem label="Email" value={sub.emEmail} /></div></section> <section><h3 className="font-bold text-lg border-b pb-2 mb-3">Service Requirements</h3><div className="grid grid-cols-2 md:grid-cols-3 gap-4"><DetailItem label="Staff Required" value={sub.emStaffRequired} /> <DetailItem label="Budget" value={sub.emBudget} /> <DetailItem label="Start Date" value={sub.emStartDate} /> <DetailItem label="Heard From" value={sub.heardFrom} /></div><div className="mt-4"><p className="text-sm font-semibold text-muted-foreground">Services Needed</p>{sub.emServices && sub.emServices.length > 0 ? (<div className="flex flex-wrap gap-2 mt-2">{sub.emServices.map(service => <Badge key={service} variant="outline">{service}</Badge>)}</div>) : <p className="text-md">N/A</p>}</div><div className="mt-4"><DetailItem label="Job/Service Description" value={sub.emJobRoleDesc} /></div><div className="mt-4"><DetailItem label="Additional Comments" value={sub.emComments} /></div></section> </>
+                  {sub.userType === 'jobSeeker' ? ( <> 
+                      <section><h3 className="font-bold text-lg border-b pb-2 mb-3">Personal Information</h3><div className="grid grid-cols-2 md:grid-cols-3 gap-4"><DetailItem label="Full Name" value={sub.jsFullName} /> <DetailItem label="Mobile" value={sub.jsMobile} /> <DetailItem label="Email" value={sub.jsEmail} /> <DetailItem label="City" value={sub.jsCity} /> <DetailItem label="Date of Birth" value={sub.jsDOB} /> <DetailItem label="Gender" value={sub.jsGender} /></div></section> 
+                      <section><h3 className="font-bold text-lg border-b pb-2 mb-3">Education & Skills</h3><div className="grid grid-cols-2 md:grid-cols-3 gap-4"><DetailItem label="Highest Qualification" value={sub.jsQualification} /> <DetailItem label="Specialization" value={sub.jsSpecialization} /> <DetailItem label="University" value={sub.jsUniversity} /> <DetailItem label="Year of Completion" value={sub.jsYearCompletion} /> <DetailItem label="Marks/CGPA" value={sub.jsMarks} /></div><div className="mt-4"><DetailItem label="Skills" value={sub.jsSkills} /></div></section> 
+                      <section><h3 className="font-bold text-lg border-b pb-2 mb-3">Work Experience</h3><div className="grid grid-cols-2 md:grid-cols-3 gap-4"><DetailItem label="Has Experience?" value={sub.jsWorkExp} /> <DetailItem label="Experience Field" value={sub.jsFieldExp} />{sub.jsWorkExp === 'yes' && <DetailItem label="Duration" value={`${sub.jsYearsExp || 0}y ${sub.jsMonthsExp || 0}m ${sub.jsDaysExp || 0}d`} />}<DetailItem label="Last Salary" value={sub.jsLastSalary} /> <DetailItem label="Expected Salary" value={sub.jsExpectedSalary} /></div></section> 
+                      <section>
+                        <h3 className="font-bold text-lg border-b pb-2 mb-3">Preferences & Other</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <DetailItem label="Joining As" value={sub.jsJoinType} />
+                            <DetailItem label="Heard From" value={sub.heardFrom} />
+                            {/* --- NEW: Conditionally display the detail --- */}
+                            <DetailItem label="Reference / Source" value={sub.heardFromDetail} />
+                        </div>
+                        <div className="mt-4"><DetailItem label="Work Arrangement" value={sub.jsWorkArrangement} /></div>
+                        <div className="mt-4"><DetailItem label="Why work with us?" value={sub.jsWhyWork} /></div>
+                      </section> 
+                    </>
+                  ) : ( <> 
+                      <section><h3 className="font-bold text-lg border-b pb-2 mb-3">Company Information</h3><div className="grid grid-cols-2 md:grid-cols-3 gap-4"><DetailItem label="Company Name" value={sub.emCompanyName} /> <DetailItem label="Contact Person" value={sub.emContactPerson} /> <DetailItem label="Mobile" value={sub.emMobile} /> <DetailItem label="Email" value={sub.emEmail} /></div></section> 
+                      <section>
+                        <h3 className="font-bold text-lg border-b pb-2 mb-3">Service Requirements</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <DetailItem label="Staff Required" value={sub.emStaffRequired} />
+                            <DetailItem label="Budget" value={sub.emBudget} />
+                            <DetailItem label="Start Date" value={sub.emStartDate} />
+                            <DetailItem label="Heard From" value={sub.heardFrom} />
+                             {/* --- NEW: Conditionally display the detail --- */}
+                            <DetailItem label="Reference / Source" value={sub.heardFromDetail} />
+                        </div>
+                        <div className="mt-4"><p className="text-sm font-semibold text-muted-foreground">Services Needed</p>{sub.emServices && sub.emServices.length > 0 ? (<div className="flex flex-wrap gap-2 mt-2">{sub.emServices.map(service => <Badge key={service} variant="outline">{service}</Badge>)}</div>) : <p className="text-md">N/A</p>}</div>
+                        <div className="mt-4"><DetailItem label="Job/Service Description" value={sub.emJobRoleDesc} /></div>
+                        <div className="mt-4"><DetailItem label="Additional Comments" value={sub.emComments} /></div>
+                      </section> 
+                    </>
                   )}
                 </div>
                 <DialogModalFooter className="sm:justify-between items-center gap-2">
