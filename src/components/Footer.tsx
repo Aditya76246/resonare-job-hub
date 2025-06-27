@@ -1,4 +1,4 @@
-
+import { Link } from "react-router-dom"; // Use Link for client-side routing
 import { Mail, Phone, MapPin } from "lucide-react";
 
 const Footer = () => {
@@ -27,10 +27,10 @@ const Footer = () => {
           <div>
             <h3 className="font-semibold mb-4 text-foreground">Quick Links</h3>
             <ul className="space-y-2">
-              <li><a href="/about" className="text-muted-foreground hover:text-primary transition-colors">About Us</a></li>
-              <li><a href="/services" className="text-muted-foreground hover:text-primary transition-colors">Services</a></li>
-              <li><a href="/contact" className="text-muted-foreground hover:text-primary transition-colors">Contact</a></li>
-              <li><a href="/career" className="text-muted-foreground hover:text-primary transition-colors">Career</a></li>
+              <li><Link to="/about" className="text-muted-foreground hover:text-primary transition-colors">About Us</Link></li>
+              <li><Link to="/services" className="text-muted-foreground hover:text-primary transition-colors">Services</Link></li>
+              <li><Link to="/contact" className="text-muted-foreground hover:text-primary transition-colors">Contact</Link></li>
+              <li><Link to="/career" className="text-muted-foreground hover:text-primary transition-colors">Career</Link></li>
             </ul>
           </div>
 
@@ -40,15 +40,15 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
                 <Mail className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground text-sm">contact@mavenbrisk.com</span>
+                <span className="text-muted-foreground text-sm">briskmaven6@gmail.com</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Phone className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground text-sm">+91 12345 67890</span>
+                <span className="text-muted-foreground text-sm">+91 908-432-2533</span>
               </div>
               <div className="flex items-center space-x-2">
                 <MapPin className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground text-sm">India</span>
+                <span className="text-muted-foreground text-sm">Shop No 01, Laxmi Chowk, Naya Bazaar,<br />Ajmer, Rajasthan 305001</span>
               </div>
             </div>
           </div>

@@ -89,9 +89,9 @@ export default function ContactPage() {
                   <CardTitle className="text-2xl">Contact Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <ContactInfoItem icon={<MapPin className="w-6 h-6" />} title="Our Office" details="123 Business Avenue, Suite 456<br />Innovation City, ST 78910" />
-                  <ContactInfoItem icon={<Mail className="w-6 h-6" />} title="Email Us" details="contact@mavenbrisk.com" />
-                  <ContactInfoItem icon={<Phone className="w-6 h-6" />} title="Call Us" details="+1 (555) 123-4567" />
+                  <ContactInfoItem icon={<MapPin className="w-6 h-6" />} title="Our Office" details="Shop No 01, Laxmi Chowk, Naya Bazaar,<br />Ajmer, Rajasthan 305001" />
+                  <ContactInfoItem icon={<Mail className="w-6 h-6" />} title="Email Us" details="briskmaven6@gmail.com" />
+                  <ContactInfoItem icon={<Phone className="w-6 h-6" />} title="Call Us" details="+91 908-432-2533" />
                   <ContactInfoItem icon={<Clock className="w-6 h-6" />} title="Business Hours" details="Monday - Friday: 9:00 AM - 6:00 PM" />
 
                   {/* Social Media Links */}
@@ -100,7 +100,7 @@ export default function ContactPage() {
                       <div className="flex items-center gap-4">
                           <motion.a href="#" whileHover={{ scale: 1.2, color: 'hsl(var(--primary))' }} className="text-muted-foreground"><Twitter className="w-6 h-6" /></motion.a>
                           <motion.a href="#" whileHover={{ scale: 1.2, color: 'hsl(var(--primary))' }} className="text-muted-foreground"><Facebook className="w-6 h-6" /></motion.a>
-                          <motion.a href="#" whileHover={{ scale: 1.2, color: 'hsl(var(--primary))' }} className="text-muted-foreground"><Linkedin className="w-6 h-6" /></motion.a>
+                          <motion.a href="https://www.linkedin.com/company/mavikh/about/" whileHover={{ scale: 1.2, color: 'hsl(var(--primary))' }} className="text-muted-foreground"><Linkedin className="w-6 h-6" /></motion.a>
                       </div>
                   </div>
                 </CardContent>
@@ -142,7 +142,7 @@ export default function ContactPage() {
             whileHover={{ scale: 1.02, transition: { duration: 0.3 } }}
           >
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3153.22557539824!2d-122.4217203846816!3d37.78336997975768!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8085809c6c8f4459%3A0x4cb4987217316757!2sSan%20Francisco%20City%20Hall!5e0!3m2!1sen!2sus!4v1678886543210!5m2!1sen!2sus"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2785.857664804262!2d74.62862797413091!3d26.46053477937893!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x396be780d9d6a2bf%3A0x26df36ec04be67f0!2sA%20Maven%20Brisk%20Resonate!5e1!3m2!1sen!2sin!4v1751008609244!5m2!1sen!2sin"
               width="100%"
               height="450"
               style={{ border: 0 }}
