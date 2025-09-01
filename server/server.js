@@ -3,28 +3,28 @@ const mongoose = require('mongoose');
 const cors =require('cors');
 require('dotenv').config();
 
-const Submission = require('./models/Submission'); // Your existing model import
+const Submission = require('./models/Submission'); 
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// --- Middleware ---
+//  Middleware 
 app.use(cors());
 app.use(express.json());
 
-// --- Database Connection ---
+//  Database Connection 
 mongoose.connect(process.env.MONGODB_URI)
 .then(() => console.log("MongoDB connected successfully!"))
 .catch(err => console.error("MongoDB connection error:", err));
 
-// --- API Routes ---
+//  API Routes
 
 // A simple test route (unchanged)
 app.get('/', (req, res) => {
   res.send('Server is running!');
 });
 
-// The main route to handle form submissions (unchanged)
+// The main route to handle form submissions unchanged
 app.post('/api/submit-form', async (req, res) => {
   try {
     console.log('Received data:', req.body);
@@ -43,7 +43,7 @@ app.post('/api/submit-form', async (req, res) => {
   }
 });
 
-// GET route to fetch all submissions (unchanged)
+// GET route to fetch all submissions unchanged
 app.get('/api/submissions', async (req, res) => {
   try {
     const allSubmissions = await Submission.find({}).sort({ createdAt: -1 });
@@ -57,7 +57,7 @@ app.get('/api/submissions', async (req, res) => {
   }
 });
 
-// --- NEW: DELETE route to remove a submission by ID ---
+//  NEW: DELETE route to remove a submission by ID 
 app.delete('/api/submissions/:id', async (req, res) => {
   try {
     const { id } = req.params; // Get the ID from the URL parameter
@@ -70,7 +70,7 @@ app.delete('/api/submissions/:id', async (req, res) => {
       return res.status(404).json({ message: 'Submission not found.' });
     }
 
-    // Send a success response.
+    // Send a success response
     res.status(200).json({ message: 'Submission deleted successfully!' });
 
   } catch (error) {
@@ -84,7 +84,7 @@ app.delete('/api/submissions/:id', async (req, res) => {
 });
 
 
-// --- Start the Server ---
+//  Start the Server 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
